@@ -1,0 +1,28 @@
+diff --git a/includes/social_stream_twitter_rest.inc b/includes/social_stream_twitter_rest.inc
+index d384749..0072e62 100644
+--- a/includes/social_stream_twitter_rest.inc
++++ b/includes/social_stream_twitter_rest.inc
+@@ -1,5 +1,7 @@
+ <?php 
+-
++/**
++ * @todo  need to clean up and comments
++ */
+ function social_stream_twitter_rest() {
+   // SET YOUR TWITTER API DETAILS HERE
+   $consumer_key = variable_get('social_stream_twitter_consumer_key', ''); 
+@@ -282,10 +284,11 @@ class TwitterOAuth {
+ 
+ /* Generic exception class
+  */
+-class OAuthException extends Exception {
+-  // pass
++if (!class_exists('OAuthException')) {
++  class OAuthException extends Exception {
++    // pass
++  }
+ }
+-
+ class OAuthConsumer {
+   public $key;
+   public $secret;

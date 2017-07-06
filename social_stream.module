@@ -1,0 +1,564 @@
+<?php
+
+// include_once 'social_stream.features.inc';
+//include_once 'social_stream.facebook.inc';
+//include_once 'social_stream.twitter.inc';
+module_load_include('inc', 'social_stream', 'includes/social_stream.features');
+
+/**
+ * Implements hook_menu().
+ */
+function social_stream_menu() {
+  $items['admin/config/media/socialfield/social-stream'] = array(
+    'title' => 'Social stream widget ',
+    'description' => 'Social stream widget settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('social_stream_settings'),
+    'access arguments' => array('view services'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+// twitter and facebook service callback
+  $items['rest/social-stream/%'] = array(
+    'page callback' => 'social_stream_rest',
+    'access callback' => TRUE,
+    'page arguments' => array(2),
+  );
+  return $items;
+}
+
+/**
+ * twitter and facebook service callback handler 
+ */
+function social_stream_rest($social_service) {
+  if ($social_service != '') {
+   /** 
+    * php variable function $social_service_func()
+    */  
+    $social_service_func = "social_stream_" . $social_service . "_rest";
+    // log error if declaration not found for service (currently 
+    // twitter and facebook declaration exist)
+    module_load_include('inc', 'social_stream', 'includes/social_stream_' . $social_service . '_rest');
+    if(function_exists($social_service_func)) {
+      return $social_service_func();
+    } else {
+      $message = t("declaration not found for the service called in url. (currently 
+      twitter and facebook declaration exist");
+      watchdog('social_stream', $message, array(), WATCHDOG_ERROR);
+    }
+  } else {
+      // log error if declaration arguments not found
+    $message = t("if service not found in url. pass service name in url see the pagecallback in hook_menu");
+    watchdog('social_stream', $message, array(), WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Table that displays all available services.
+ */
+function social_stream_settings($form, &$form_state) {
+  global $base_url;
+  $path = libraries_get_path('jquery-social-stream');
+
+  $form = array();
+  $form['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General'),
+  );
+  $form['general']['social_stream_js_stream'] = array(
+    '#type' => 'textfield',
+    '#title' => t('jquery.social.stream Javascript file name'),
+    '#default_value' => variable_get('social_stream_js_stream', 'jquery.social.stream.1.5.9.min.js'),
+  );
+  $form['general']['social_stream_js_wall'] = array(
+    '#type' => 'textfield',
+    '#title' => t('jquery.social.stream.wall Javascript file name'),
+    '#default_value' => variable_get('social_stream_js_wall', 'jquery.social.stream.wall.1.6.js'),
+    '#description' => t('These files should exist in the jQuery Social Stream library in the js/ directory.'),
+  );
+  // twitter fields bigins 
+  $form['twitter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Twitter'),
+    '#description' => t('To make Twitter feeds appear, you need to create a Twitter app and enter the oAuth credentials here.  For details in this process, see the !link.', array('!link' => l('jQuery Social Stream documentation', $path . '/index.html', array('fragment' => 'twitter-api')))),
+  );
+  $form['twitter']['social_stream_twitter_consumer_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Consumer key'),
+    '#default_value' => variable_get('social_stream_twitter_consumer_key', ''),
+  );
+  $form['twitter']['social_stream_twitter_consumer_secret'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Consumer secret'),
+    '#default_value' => variable_get('social_stream_twitter_consumer_secret', ''),
+  );
+  $form['twitter']['social_stream_twitter_oauth_access_token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('oAuth access token'),
+    '#default_value' => variable_get('social_stream_twitter_oauth_access_token', ''),
+  );
+  $form['twitter']['social_stream_twitter_oauth_access_token_secret'] = array(
+    '#type' => 'textfield',
+    '#title' => t('oAuth access token secret'),
+    '#default_value' => variable_get('social_stream_twitter_oauth_access_token_secret', ''),
+  );
+  $form['twitter']['social_stream_twitter_days'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Enter number of days old twitter post to be displayed.'),
+    '#field_suffix' => t('days'),
+    '#default_value' => variable_get('social_stream_twitter_days', '365'),
+    '#description' => t("Enter number of days old twitter post to be displayed. by default 365 days"),
+    '#attribute' => array(
+      'onkeypress' => 'return isNumber(event)'
+    ),
+    '#maxlength' => 3
+  );
+// twitter fields ends 
+// instagram fields starts 
+  $form['instagram'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Instagram'),
+    '#description' => t('To make Instagram feeds appear, you need to create an Instagram app and enter the oAuth credentials here.  For details in this process, see the !link under "Plugin Options".', array('!link' => l('jQuery Social Stream documentation', $path . '/index.html', array('fragment' => '')))),
+  );
+  $form['instagram']['social_stream_instagram_client_id'] = array(
+    '#type' => 'textfield',
+    //'#description' => t('Create a new widget on the !link and enter the Widget ID parameter (the data-widget-id from the generated embed code). This can also be overwritten per-field.', array('!link' => l('Twitter settings page', 'https://twitter.com/settings/widgets'))),
+    '#title' => t('Client ID'),
+    '#default_value' => variable_get('social_stream_instagram_client_id', ''),
+  );
+  $form['instagram']['social_stream_instagram_redirect_url'] = array(
+    '#type' => 'textfield',
+    '#description' => t('The url to redirect to in order to obtain the client ID (see link above for details).'),
+    '#title' => t('Redirect URL'),
+    '#default_value' => variable_get('social_stream_instagram_redirect_url', $base_url),
+  );
+  /**
+   * @todo Need to add select option for other services
+   */
+  $form['instagram']['instagram_feeds_type'] = array(
+    '#type' => 'select',
+    '#description' => t("Select instagram feeds type."),
+    '#title' => t('Instagram Feeds Type'),
+    '#options' => [
+//      'media_search' => 'Media search',
+//      'tags_media_recent' => 'Tags media recent',
+      'users_media_recent' => 'Users media recent',
+//      'locations_media_recent' => 'Locations media recent',
+    ],
+    '#default_value' => variable_get('instagram_feeds_type', 'users_media_recent'),
+  );
+// instagram ends
+// rss starts 
+//  $form['rss'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('RSS'),
+//    '#description' => t('RSS feeds '),
+//  );
+//  $form['rss']['feeds_url'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('RSS feeds url'),
+//    '#description' => t('RSS feeds '),
+//  );
+//// rss ends 
+//// stumbleupon starts 
+//  $form['stumbleupon'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('stumbleupon'),
+//    '#description' => t('stumbleupon '),
+//  );
+//  $form['stumbleupon']['stumbleupon_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('stumbleupon_id'),
+//    '#description' => t('stumbleupon_id '),
+//  );  
+//// stumbleupon ends 
+//// google: starts 
+//  $form['google'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('google'),
+//    '#description' => t('google '),
+//  );
+//  $form['google']['google_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('google_id'),
+//    '#description' => t('google_id '),
+//  );   
+//// google:ends 
+//// delicious: starts
+//  $form['delicious'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('delicious'),
+//    '#description' => t('delicious '),
+//  );
+//  $form['delicious']['delicious_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('delicious_id'),
+//    '#description' => t('delicious_id '),
+//  );
+//// delicious: ends
+//// vimeo: starts  
+//  $form['vimeo'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('vimeo'),
+//    '#description' => t('vimeo'),
+//  );
+//  $form['vimeo']['vimeo_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('vimeo_id'),
+//    '#description' => t('vimeo_id '),
+//  );
+//// vimeo: ends 
+//// youtube: 
+//  $form['youtube'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('youtube'),
+//    '#description' => t('youtube'),
+//  );
+//  $form['youtube']['youtube_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('youtube_id'),
+//    '#description' => t('youtube_id '),
+//  );
+//  $form['youtube']['youtube_thumb'] = array(
+//    '#type' => 'select',
+//    '#title' => t('youtube_thumb'),
+//    '#description' => t('youtube_thumb'),
+//    '#options' => [
+////      'media_search' => 'Media search',
+////      'tags_media_recent' => 'Tags media recent',
+//      'medium' => 'Medium',
+////      'locations_media_recent' => 'Locations media recent',
+//    ],    
+//  );
+//// youtube: ends 
+//// pinterest: starts 
+//  $form['pinterest'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('pinterest'),
+//    '#description' => t('pinterest'),
+//  );
+//  $form['pinterest']['pinterest_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('pinterest_id'),
+//    '#description' => t('pinterest_id '),
+//  );
+//// pinterest: ends 
+//// flickr: starts
+//  $form['flickr'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('flickr'),
+//    '#description' => t('flickr'),
+//  );
+//  $form['flickr']['flickr_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('flickr_id'),
+//    '#description' => t('flickr_id'),
+//  );
+//
+//// flickr: ends 
+//// lastfm: starts 
+//  $form['lastfm'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('lastfm'),
+//    '#description' => t('lastfm'),
+//  );
+//  $form['lastfm']['lastfm_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('lastfm_id'),
+//    '#description' => t('lastfm_id '),
+//  );
+//
+//// lastfm: ends 
+//// dribbble: starts 
+//  $form['dribbble'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('dribbble'),
+//    '#description' => t('dribbble'),
+//  );
+//  $form['dribbble']['dribbble_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('dribbble_id'),
+//    '#description' => t('dribbble_id '),
+//  );
+//
+//// dribbble: ends 
+//// deviantart: 
+//  $form['deviantart'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('deviantart'),
+//    '#description' => t('deviantart'),
+//  );
+//  $form['deviantart']['deviantart_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('deviantart_id'),
+//    '#description' => t('deviantart_id '),
+//  );
+//// deviantart:
+//// tumblr:
+//  $form['tumblr'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('tumblr'),
+//    '#description' => t('tumblr'),
+//  );
+//  $form['tumblr']['tumblr_id'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('tumblr_id'),
+//    '#description' => t('tumblr_id'),
+//  );
+// tumblr:  
+  return system_settings_form($form);
+}
+
+/******************************* FIELD FORMATTERS ***************************** */
+
+/**
+* Implements hook_field_formatter_info().
+*/
+function social_stream_field_formatter_info() {
+  $info = array(
+    'social_stream' => array(
+      'label' => t('Social Stream feed'),
+      'field types' => array('social_links_field'),
+      'settings'  => array(
+        'height' => 480,
+        'theme' => 'light',
+      ),
+    ),
+    'social_stream_wall' => array(
+      'label' => t('Social Stream wall'),
+      'field types' => array('social_links_field'),
+      'settings'  => array(
+        'theme' => 'light',
+      ),
+    ),
+  );
+  return $info;
+}
+
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function social_stream_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $element = array();
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  // Add fields
+  switch ($display['type']) {
+
+    case 'social_stream':
+      $element['markup'] = array(
+        '#type' => 'markup',
+        '#markup' => '<p>'.t('Be sure to set the !link if you are using Twitter or Instagram.', array('!link' => l('Social Stream settings', 'admin/config/media/socialfield/social-stream'))).'</p>',
+      );
+      $element['theme'] = array(
+        '#title' => t('Theme'),
+        '#type' => 'select',
+        '#default_value' => $settings['theme'],
+        '#options' => array('light' => t('Light'), 'dark' => t('Dark')),
+      );
+      $element['height'] = array(
+        '#title' => t('Height'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['height'],
+        '#field_suffix' => ' px',
+      );
+      break;
+
+    case 'social_stream_wall':
+      $element['markup'] = array(
+        '#type' => 'markup',
+        '#markup' => '<p>'.t('Be sure to set the !link if you are using Twitter or Instagram.', array('!link' => l('Social Stream settings', 'admin/config/media/socialfield/social-stream'))).'</p>',
+      );
+      $element['theme'] = array(
+        '#title' => t('Theme'),
+        '#type' => 'select',
+        '#default_value' => $settings['theme'],
+        '#options' => array('light' => t('Light'), 'dark' => t('Dark')),
+      );
+      break;
+  }
+ 
+  return $element;
+}
+
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ * @todo
+ */
+function social_stream_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  foreach ($settings as $key => $value) {
+    if(!is_array($value)) {
+      $summary[] = $key . ': ' . $value;
+    }
+  }
+
+  return implode('<br />', $summary);
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function social_stream_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+  
+  $settings['type'] = $display['type'];
+
+  $feeds = array();
+  foreach ($items as $item) {
+    $feeds[$item['service']] = $item['url'];
+  }
+  $settings['feeds'] = $feeds;
+  $element[0]['#markup'] = theme('social_stream', $settings);
+
+  return $element;
+}
+
+
+
+/******************************* THEME FUNCTIONS ***************************** */
+
+/**
+ * Implements hook_theme().
+ */
+function social_stream_theme() {
+  return array(
+    'social_stream' => array(
+      'template' => 'templates/social-stream',
+      'variables' => array(
+        'feeds' => array(),
+        'type' => '',
+        'height' => '',
+        'theme' => 'light',
+        'limit' => 15,
+        'no_library' => FALSE,
+      ),
+    ),
+  );
+}
+
+
+
+/**
+ * Implements hook_theme_preprocess().
+ */
+function template_preprocess_social_stream(&$variables) {
+  $path = libraries_get_path('jquery-social-stream');
+  if (empty($path)) {
+    $variables['no_library'] = TRUE;
+  }
+
+  // Add library files  
+  drupal_add_js($path . '/inc/js/jquery.plugins.js');
+  drupal_add_js($path . '/inc/js/jquery.site.js');
+  drupal_add_js($path . '/js/' . variable_get('social_stream_js_stream', 'jquery.social.stream.1.5.9.min.js'));
+  if ($variables['type'] === 'social_stream_wall') {
+    drupal_add_css($path . '/css/dcsns_wall.css');
+    drupal_add_js($path . '/js/' . variable_get('social_stream_js_wall', 'jquery.social.stream.wall.1.6.js'));
+  }
+  else {
+    drupal_add_css($path . '/css/dcsns_'. $variables['theme'] .'.css');
+  }
+
+  // Clean up feeds
+  $feeds = array();
+  foreach ($variables['feeds'] as $service => $feed) {
+    if (strpos($feed, 'http') !== FALSE) {
+      $feed = explode('/', $feed);
+      if ($feed[count($feed)-3] == "www.pinterest.com") {
+        $feed =  implode('/', [$feed[count($feed)-2], $feed[count($feed)-1]]);
+      } else if ($feed[2] == "rss.com") {
+        $feed =  implode('/', array_slice($feed, 3));
+      } else {
+        $feed = $feed[count($feed)-1];        
+      }
+    }
+    $feeds[$service] = array('id' => $feed);
+  }
+  /**
+   * @todo service url are hard coded need to make dynamic
+   */
+  if (isset($feeds['twitter']) && !empty($feeds['twitter'])) {
+//    				id: '157969574262873',
+//				out: 'intro,thumb,text,user,share'
+    $feeds['twitter']['url'] = url('rest/social-stream/twitter');
+  }
+  
+  if (isset($feeds['facebook']) && !empty($feeds['facebook'])) {
+    $feeds['facebook']['url'] = url('rest/social-stream/facebook');
+  }
+
+  if (isset($feeds['rss']) && !empty($feeds['rss'])) {
+    $feeds['rss']['url'] = url('rest/social-stream/rss');
+  } 
+  if (isset($feeds['pinterest']) && !empty($feeds['pinterest'])) {
+    $feeds['pinterest']['url'] = url('rest/social-stream/rss');
+  }
+  if (isset($feeds['instagram']) && !empty($feeds['instagram'])) {
+    $ift = variable_get("instagram_feeds_type",  "users_media_recent");
+    switch($ift) {
+      case 'media_search':
+        $feeds['instagram']['id'] = '?' . $feeds['instagram']['id'];
+        break;
+      case 'tags_media_recent':
+        $feeds['instagram']['id'] = '#' . $feeds['instagram']['id'];
+        break;
+      case 'users_media_recent':
+        $feeds['instagram']['id'] = '!' . $feeds['instagram']['id'];
+        break;
+      case 'locations_media_recent':
+        $feeds['instagram']['id'] = '@' . $feeds['instagram']['id'];
+        break;
+    }
+		$feeds['instagram']['accessToken'] = variable_get("socialfeed_instagram_access_token",  "");
+    $feeds['instagram']['clientId'] = variable_get("socialfeed_instagram_client_id",  "");
+  }
+// dpm($feeds);
+/*  if (isset($feeds['pinterest']) && !empty($feeds['pinterest'])) {
+    // $feeds['pinterest']['id'] = $feeds['pinterest']['id'] . ;
+  }*/
+
+  // Add Settings
+  $image_path = url($path . '/images/dcsns-'. $variables['theme'] .'/');
+  $settings = array(
+    'type' => 'wall',
+    'limit' => $variables['limit'],
+    'feeds' => $feeds,
+    'iconPath' => $image_path,
+    'imagePath' => $image_path,
+    'height' => $variables['height'],
+  );
+  
+  $social_stream_twitter_days = variable_get('social_stream_twitter_days', '');
+  if ($social_stream_twitter_days != '') {
+    $settings['days'] = $social_stream_twitter_days;
+  }
+  drupal_add_js(array('social_stream' => $settings), 'setting');
+
+  // Add module js
+  drupal_add_js(drupal_get_path('module', 'social_stream') . '/js/social-stream.js');
+}
+
+
+/*
+
+feeds: feeds,
+  
+        control: false,
+        filter: true,
+        wall: settings.social_stream.type === 'wall' ? true : false,
+        cache: true,
+        //days: data.length < 15 ? 30 : 50, //igniored because max=limit
+        max: 'limit',
+        limit: settings.social_stream.limit,
+        //order: 'random',
+
+        */

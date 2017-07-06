@@ -1,0 +1,7 @@
+name = Social Stream
+description = Integrates the socialfield module with jQuery Social Stream paid plugin 
+core = 7.x
+package = Fields
+
+dependencies[] = socialfield
+dependencies[] = socialfeed
