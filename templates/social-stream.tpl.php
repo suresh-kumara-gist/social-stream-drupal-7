@@ -1,6 +1,12 @@
-<?php if($no_library): ?>
-  JQuery Social Stream plugin not found.
-<?php else: ?>
+<?php
+
+/**
+ * @file
+ * Generates div selector for rendering social stream.
+ */
+if ($no_library):
+  echo t('JQuery Social Stream plugin not found.');
+  else: ?>
   <div id="wrapper">
     <div id="container"> 
       <?php if ($type === 'wall'): ?>
@@ -12,6 +18,5 @@
       <?php endif; ?>
     </div>
   </div>
-<?php endif; ?>
-
+  <?php endif; ?>
 <div id="social-stream-test"></div>

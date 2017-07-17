@@ -1,45 +1,71 @@
-<?php 
+<?php
+
 /**
- * @todo  need to clean up and comments
+ * @file
+ * twitter response render in json
+ * @todo
+ * Need to clean up and comments.
+ */
+
+/**
+ * twitter rest callback
  */
 function social_stream_twitter_rest() {
-  // SET YOUR TWITTER API DETAILS HERE
-  $consumer_key = variable_get('social_stream_twitter_consumer_key', ''); 
+  // SET YOUR TWITTER API DETAILS HERE.
+  $consumer_key = variable_get('social_stream_twitter_consumer_key', '');
   $consumer_secret = variable_get('social_stream_twitter_consumer_secret', '');
-  $oauth_access_token = variable_get('social_stream_twitter_oauth_access_token', ''); 
+  $oauth_access_token = variable_get('social_stream_twitter_oauth_access_token', '');
   $oauth_access_token_secret = variable_get('social_stream_twitter_oauth_access_token_secret', '');
-  
-  // DO NOT EDIT BELOW THIS LINE
-  switch($_GET['url'])
-  {
+
+  // DO NOT EDIT BELOW THIS LINE.
+  switch ($_GET['url']) {
     case 'timeline':
-    $rest = 'statuses/user_timeline' ;
-    $params = Array('count' => $_GET['count'], 'include_rts' => $_GET['include_rts'], 'exclude_replies' => $_GET['exclude_replies'], 'screen_name' => $_GET['screen_name']);
-    break;
+      $rest = 'statuses/user_timeline';
+      $params = [
+        'count' => $_GET['count'],
+        'include_rts' => $_GET['include_rts'],
+        'exclude_replies' => $_GET['exclude_replies'],
+        'screen_name' => $_GET['screen_name'],
+      ];
+      break;
+
     case 'search':
-    $rest = "search/tweets";
-    $params = Array('q' => $_GET['q'], 'count' => $_GET['count'], 'include_rts' => $_GET['include_rts']);
-    break;
+      $rest = "search/tweets";
+      $params = [
+        'q' => $_GET['q'],
+        'count' => $_GET['count'],
+        'include_rts' => $_GET['include_rts'],
+      ];
+      break;
+
     case 'list':
-    $rest = "lists/statuses";
-    $params = Array('list_id' => $_GET['list_id'], 'count' => $_GET['count'], 'include_rts' => $_GET['include_rts']);
-    break;
+      $rest = "lists/statuses";
+      $params = [
+        'list_id' => $_GET['list_id'],
+        'count' => $_GET['count'],
+        'include_rts' => $_GET['include_rts'],
+      ];
+      break;
+
     default:
-    $rest = 'statuses/user_timeline' ;
-    $params = Array('count' => '20');
-    break;
+      $rest = 'statuses/user_timeline';
+      $params = [
+        'count' => '20',
+      ];
+      break;
   }
 
-  $auth = new TwitterOAuth($consumer_key,$consumer_secret,$oauth_access_token,$oauth_access_token_secret);
-  $get = $auth->get( $rest, $params );
-
-  if( ! $get ) {
-    echo 'An error occurs while reading the feed, please check your connection or settings';
+  $auth = new TwitterOAuth($consumer_key, $consumer_secret, $oauth_access_token,
+      $oauth_access_token_secret);
+  $get = $auth->get($rest, $params);
+  if (!$get) {
+    echo 'An error occurs while reading the feed, '
+    . 'please check your connection or settings';
   }
-      
-  if( isset( $get->errors ) ) {
-    foreach( $get->errors as $key => $val ) echo $val;
-  } else {
+  if (isset($get->errors)) {
+    foreach ($get->errors as $key => $val) echo $val;
+  }
+  else {
     echo $get;
   }
 }
@@ -50,55 +76,105 @@ function social_stream_twitter_rest() {
  */
 
 /**
- * Twitter OAuth class
+ * Twitter OAuth class.
  */
 class TwitterOAuth {
-  /* Contains the last HTTP status code returned. */
+  /**
+   * Contains the last HTTP status code returned.
+   */
   public $http_code;
-  /* Contains the last API call. */
+
+  /* 
+   * Contains the last API call.
+   */
   public $url;
-  /* Set up the API root URL. */
+
+  /** 
+   * Set up the API root URL. 
+   */
   public $host = "https://api.twitter.com/1.1/";
-  /* Set timeout default. */
+
+  /**
+   * Set timeout default.
+   */
   public $timeout = 30;
-  /* Set connect timeout. */
-  public $connecttimeout = 30; 
-  /* Verify SSL Cert. */
+
+  /**
+   * Set connect timeout.
+   */
+  public $connecttimeout = 30;
+
+  /** 
+   * Verify SSL Cert.
+   */
   public $ssl_verifypeer = FALSE;
-  /* Respons format. */
+  
+  /**
+   * Respons format.
+   */
   public $format = 'json';
-  /* Decode returned json data. */
-  public $decode_json = false;
-  /* Contains the last HTTP headers returned. */
+  
+  /**
+   * Decode returned json data.
+   */
+  public $decode_json = FALSE;
+  
+  /**
+   * Contains the last HTTP headers returned.
+   */
   public $http_info;
-  /* Set the useragnet. */
+  
+  /**
+   *  Set the useragnet.
+   */
   public $useragent = 'TwitterOAuth v0.2.0-beta2';
-  /* Immediately retry the API call if the response was not successful. */
-  //public $retry = TRUE;
+
+  /* 
+   * Immediately retry the API call if the response was not successful.
+   * public $retry = TRUE;
+   */
+
+  /*
+   * Set API URLS.
+   */
+  function accessTokenURL() {
+    return 'https://api.twitter.com/oauth/access_token';
+  }
+  function authenticateURL() {
+    return 'https://api.twitter.com/oauth/authenticate';
+  }
+  function authorizeURL() {
+    return 'https://api.twitter.com/oauth/authorize';
+  }
+  function requestTokenURL() {
+    return 'https://api.twitter.com/oauth/request_token';
+  }
 
   /**
-   * Set API URLS
+   * Debug helpers.
    */
-  function accessTokenURL()  { return 'https://api.twitter.com/oauth/access_token'; }
-  function authenticateURL() { return 'https://api.twitter.com/oauth/authenticate'; }
-  function authorizeURL()    { return 'https://api.twitter.com/oauth/authorize'; }
-  function requestTokenURL() { return 'https://api.twitter.com/oauth/request_token'; }
+  function lastStatusCode() {
+    return $this->http_status;
+  }
+  function lastAPICall() {
+    return $this->last_api_call;
+  }
 
   /**
-   * Debug helpers
+   * Construct TwitterOAuth object.
    */
-  function lastStatusCode() { return $this->http_status; }
-  function lastAPICall() { return $this->last_api_call; }
-
-  /**
-   * construct TwitterOAuth object
-   */
-  function __construct($consumer_key, $consumer_secret, $oauth_token = NULL, $oauth_token_secret = NULL) {
+  function __construct(
+      $consumer_key,
+      $consumer_secret,
+      $oauth_token = NULL,
+      $oauth_token_secret = NULL
+    ) {
     $this->sha1_method = new OAuthSignatureMethod_HMAC_SHA1();
     $this->consumer = new OAuthConsumer($consumer_key, $consumer_secret);
     if (!empty($oauth_token) && !empty($oauth_token_secret)) {
       $this->token = new OAuthConsumer($oauth_token, $oauth_token_secret);
-    } else {
+    }
+    else {
       $this->token = NULL;
     }
   }
@@ -130,8 +206,9 @@ class TwitterOAuth {
     }
     if (empty($sign_in_with_twitter)) {
       return $this->authorizeURL() . "?oauth_token={$token}";
-    } else {
-       return $this->authenticateURL() . "?oauth_token={$token}";
+    }
+    else {
+      return $this->authenticateURL() . "?oauth_token={$token}";
     }
   }
 
@@ -151,7 +228,8 @@ class TwitterOAuth {
     }
     $request = $this->oAuthRequest($this->accessTokenURL(), 'GET', $parameters);
     $token = OAuthUtil::parse_parameters($request);
-    $this->token = new OAuthConsumer($token['oauth_token'], $token['oauth_token_secret']);
+    $this->token = new OAuthConsumer($token['oauth_token'],
+        $token['oauth_token_secret']);
     return $token;
   }
 
@@ -165,7 +243,7 @@ class TwitterOAuth {
    *                "x_auth_expires" => "0")
    */  
   function getXAuthToken($username, $password) {
-    $parameters = array();
+    $parameters = [];
     $parameters['x_auth_username'] = $username;
     $parameters['x_auth_password'] = $password;
     $parameters['x_auth_mode'] = 'client_auth';
@@ -185,7 +263,7 @@ class TwitterOAuth {
     }
     return $response;
   }
-  
+
   /**
    * POST wrapper for oAuthRequest.
    */
@@ -250,6 +328,7 @@ class TwitterOAuth {
           curl_setopt($ci, CURLOPT_POSTFIELDS, $postfields);
         }
         break;
+
       case 'DELETE':
         curl_setopt($ci, CURLOPT_CUSTOMREQUEST, 'DELETE');
         if (!empty($postfields)) {
@@ -280,8 +359,7 @@ class TwitterOAuth {
   }
 }
 
-// vim: foldmethod=marker
-
+// Vim: foldmethod=marker.
 /* Generic exception class
  */
 if (!class_exists('OAuthException')) {
@@ -395,7 +473,7 @@ class OAuthSignatureMethod_HMAC_SHA1 extends OAuthSignatureMethod {
     $key_parts = OAuthUtil::urlencode_rfc3986($key_parts);
     $key = implode('&', $key_parts);
 
-    return base64_encode(hash_hmac('sha1', $base_string, $key, true));
+    return base64_encode(hash_hmac('sha1', $base_string, $key, TRUE));
   }
 }
 
@@ -463,16 +541,16 @@ abstract class OAuthSignatureMethod_RSA_SHA1 extends OAuthSignatureMethod {
     $base_string = $request->get_signature_base_string();
     $request->base_string = $base_string;
 
-    // Fetch the private key cert based on the request
+    // Fetch the private key cert based on the request.
     $cert = $this->fetch_private_cert($request);
 
-    // Pull the private key ID from the certificate
+    // Pull the private key ID from the certificate.
     $privatekeyid = openssl_get_privatekey($cert);
 
-    // Sign using the key
-    $ok = openssl_sign($base_string, $signature, $privatekeyid);
+    // Sign using the key.
+    openssl_sign($base_string, $signature, $privatekeyid);
 
-    // Release the key resource
+    // Release the key resource.
     openssl_free_key($privatekeyid);
 
     return base64_encode($signature);
@@ -585,7 +663,7 @@ class OAuthRequest {
     return new OAuthRequest($http_method, $http_url, $parameters);
   }
 
-  public function set_parameter($name, $value, $allow_duplicates = true) {
+  public function set_parameter($name, $value, $allow_duplicates = TRUE) {
     if ($allow_duplicates && isset($this->parameters[$name])) {
       // We have already added parameter(s) with this name, so add to the list
       if (is_scalar($this->parameters[$name])) {
@@ -699,10 +777,10 @@ class OAuthRequest {
    * builds the Authorization: header
    */
   public function to_header($realm=null) {
-    $first = true;
+    $first = TRUE;
   if($realm) {
       $out = 'Authorization: OAuth realm="' . OAuthUtil::urlencode_rfc3986($realm) . '"';
-      $first = false;
+      $first = FALSE;
     } else
       $out = 'Authorization: OAuth';
 
@@ -717,7 +795,7 @@ class OAuthRequest {
               '="' .
               OAuthUtil::urlencode_rfc3986($v) .
               '"';
-      $first = false;
+      $first = FALSE;
     }
     return $out;
   }
@@ -731,10 +809,10 @@ class OAuthRequest {
     $this->set_parameter(
       "oauth_signature_method",
       $signature_method->get_name(),
-      false
+      FALSE
     );
     $signature = $this->build_signature($signature_method, $consumer, $token);
-    $this->set_parameter("oauth_signature", $signature, false);
+    $this->set_parameter("oauth_signature", $signature, FALSE);
   }
 
   public function build_signature($signature_method, $consumer, $token) {
@@ -776,8 +854,7 @@ class OAuthServer {
       $signature_method;
   }
 
-  // high level functions
-
+  // High level functions.
   /**
    * process a request_token request
    * returns the request token on success
@@ -1023,7 +1100,7 @@ class OAuthUtil {
   // Utility function for turning the Authorization: header into
   // parameters, has to do some unescaping
   // Can filter out any non-oauth parameters if needed (default behaviour)
-  public static function split_header($header, $only_allow_oauth_parameters = true) {
+  public static function split_header($header, $only_allow_oauth_parameters = TRUE) {
     $pattern = '/(([-_a-z]*)=("([^"]*)"|([^,]*)),?)/';
     $offset = 0;
     $params = array();
@@ -1106,11 +1183,10 @@ class OAuthUtil {
 
       if (isset($parsed_parameters[$parameter])) {
         // We have already recieved parameter(s) with this name, so add to the list
-        // of parameters with this name
-
+        // of parameters with this name.
         if (is_scalar($parsed_parameters[$parameter])) {
           // This is the first duplicate, so transform scalar (string) into an array
-          // so we can add the duplicates
+          // so we can add the duplicates.
           $parsed_parameters[$parameter] = array($parsed_parameters[$parameter]);
         }
 
