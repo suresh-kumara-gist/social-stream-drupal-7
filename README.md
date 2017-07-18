@@ -13,6 +13,13 @@ Installation
 4. If you want to use Twitter or Instagram, you need to obtain oAuth tokens.  Go to `/admin/config/media/socialfield/social-stream` and follow the links on that page.
 5. Add a Social Field field to a content type, [fieldable panel pane](https://www.drupal.org/project/fieldable_panels_panes) or [bean block](https://www.drupal.org/project/bean).  Choose the Social Stream feed or Social Stream wall display formatter and edit the additional settings on that page.
 
+This module is not working for:
+delicious, flickr, yahoo, deviantart, dribbble, lastfm, flickr, google, stumbleupon.
+
+This module is working for fine for:
+facebook, youtube, vimeo, pinterest, tumblr, rest
+
+Please follow this link for configuration.
 
 Using without the Social Field module
 -------------------------------------
